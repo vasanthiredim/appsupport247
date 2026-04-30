@@ -33,18 +33,22 @@ def telegram_webhook():
 
     print("Incoming:", data)
 
-    if "message" in data and "text" in data["message"]:
-        chat_id = data["message"]["chat"]["id"]
-        text = data["message"]["text"]
+    message = data.get("message") or data.get("edited_message")
 
-        reply = get_reply(text)
+    if message:
+        chat_id = message["chat"]["id"]
+        text = message.get("text", "")
 
-        requests.post(
-            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-            json={"chat_id": chat_id, "text": reply}
-        )
+        if text:
+            reply = get_reply(text)
+
+            requests.post(
+                f"https://api.telegram.org/bot8713103184:AAFeJrQNpfJB9hqmSDJBaRgT67odOIVsFL8/sendMessage",
+                json={"chat_id": chat_id, "text": reply}
+            )
 
     return "ok"
+
 # WhatsApp Webhook (Twilio)
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp():
