@@ -1,68 +1,61 @@
 from flask import Flask, request
-from twilio.twiml.messaging_response import MessagingResponse
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
-import asyncio
-import threading
+import requests
+import os
 
-# ====== CONFIG ======
-TELEGRAM_TOKEN = "8713103184:AAFeJrQNpfJB9hqmSDJBaRgT67odOIVsFL8"
+app = Flask(__name__)
 
-# ====== FAQ DATA ======
+TOKEN = os.getenv("8713103184:AAFeJrQNpfJB9hqmSDJBaRgT67odOIVsFL8")
+
 FAQS = {
-    "bet settlement": "We will check the bet details and get back to you shortly.",
+    "bet settlement": "Thank you for reaching out. We will check the bet details and get back to you shortly.",
     "transaction": "We will review the transaction details and update you shortly.",
-    "game issue": "We are checking the issue with the provider and will update you soon.",
-    "game launch": "We will check the game launch issue and update you shortly.",
+    "game launch": "We will check the game launch issue with the provider and update you shortly.",
     "results": "We will verify and share the results shortly.",
     "whitelist": "We will whitelist the domains and update you shortly.",
-    "balance": "Please refresh your account or log in again.",
+    "balance": "Please refresh your account or log in again to check the updated balance.",
     "deposit": "Please check with your payment provider.",
-    "withdraw": "Your withdrawal is under process.",
-    "login": "Please try clearing cache and logging in again.",
-    "network": "We are checking the network issue.",
-    "maintenance": "We are currently under maintenance."
+    "withdraw": "Your withdrawal is under process. Please allow some time.",
+    "login": "Please try clearing your cache and logging in again.",
+    "maintenance": "We are currently under maintenance. Services will resume shortly."
 }
 
-# ====== COMMON LOGIC ======
 def get_reply(text):
     text = text.lower()
-    for keyword in sorted(FAQS.keys(), key=len, reverse=True):
+    for keyword in FAQS:
         if keyword in text:
             return FAQS[keyword]
-    return "Our support team will assist you shortly."
+    return "Thank you for your message. Our team will assist you shortly."
 
-# ====== TELEGRAM ======
-async def telegram_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-    response = get_reply(update.message.text)
-    await update.message.reply_text(response)
+# Telegram Webhook
+@app.route(f"/{TOKEN}", methods=["POST"])
+def telegram_webhook():
+    data = request.json
 
-def run_telegram():
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT, telegram_reply))
-    print("Telegram bot running...")
-    app.run_polling()
+    if "message" in data:
+        chat_id = data["message"]["chat"]["id"]
+        text = data["message"].get("text", "")
 
-# ====== WHATSAPP (Flask) ======
-flask_app = Flask(__name__)
+        reply = get_reply(text)
 
-@flask_app.route("/whatsapp", methods=['POST'])
-def whatsapp_reply():
-    incoming_msg = request.form.get('Body', '')
-    reply = get_reply(incoming_msg)
-    resp = MessagingResponse()
-    resp.message(reply)
-    return str(resp)
+        requests.post(
+            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            json={"chat_id": chat_id, "text": reply}
+        )
 
-def run_flask():
-    print("WhatsApp bot running on port 5000...")
-    flask_app.run(port=5000)
+    return "ok"
 
-# ====== MAIN ======
+# WhatsApp Webhook (Twilio)
+@app.route("/whatsapp", methods=["POST"])
+def whatsapp():
+    incoming = request.form.get("Body", "")
+    reply = get_reply(incoming)
+    return f"<Response><Message>{reply}</Message></Response>"
+
+# REQUIRED for Render
+@app.route("/")
+def home():
+    return "Bot is running"
+
 if __name__ == "__main__":
-    t1 = threading.Thread(target=run_telegram)
-    t1.start()
-
-    run_flask()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
