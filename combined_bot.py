@@ -27,13 +27,15 @@ def get_reply(text):
     return "Thank you for your message. Our team will assist you shortly."
 
 # Telegram Webhook
-@app.route(f"/{TOKEN}", methods=["POST"])
+@app.route("/", methods=["POST"])
 def telegram_webhook():
-    data = request.json
+    data = request.get_json(force=True)
 
-    if "message" in data:
+    print("Incoming:", data)
+
+    if "message" in data and "text" in data["message"]:
         chat_id = data["message"]["chat"]["id"]
-        text = data["message"].get("text", "")
+        text = data["message"]["text"]
 
         reply = get_reply(text)
 
@@ -43,7 +45,6 @@ def telegram_webhook():
         )
 
     return "ok"
-
 # WhatsApp Webhook (Twilio)
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp():
