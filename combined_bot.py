@@ -62,7 +62,7 @@ def telegram_webhook():
         if text:
             reply = get_reply(text)
 
-            telegram_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+            telegram_url = f"https://api.telegram.org/bot8783576920:AAHMBSnxlOp9BFka45fiJBC6nlT_WPOQfsM/sendMessage"
 
             requests.post(
                 telegram_url,
