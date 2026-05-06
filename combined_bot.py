@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # Telegram Bot Token
-TOKEN = "8713103184:AAFeJrQNpfJB9hqmSDJBaRgT67odOIVsFL8"
+TOKEN = "8783576920:AAHMBSnxlOp9BFka45fiJBC6nlT_WPOQfsM"
 
 # FAQ Responses
 FAQS = {
